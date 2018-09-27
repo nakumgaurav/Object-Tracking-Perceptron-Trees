@@ -1,4 +1,4 @@
-# Perceptron Algorithm on the Sonar Dataset
+# Balanced Perceptron Tree Algorithm on the Banknote Dataset
 from random import seed
 from random import randrange
 from csv import reader
