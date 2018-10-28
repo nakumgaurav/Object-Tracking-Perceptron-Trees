@@ -1,4 +1,4 @@
-# Balanced Perceptron Tree Algorithm on the Banknote Dataset
+# Perceptron Algorithm on the Sonar Dataset
 from random import seed
 from random import randrange
 from csv import reader
@@ -7,9 +7,11 @@ import argparse
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
 
-parser = argparse.ArgumentParser()
-parser.add_argument("epochs")
-args = parser.parse_args()
+# parser = argparse.ArgumentParser()
+# parser.add_argument("epochs", default=5)
+# args = parser.parse_args()
+n_epoch = 5
+
 
 threshold = 0.0001
 
@@ -54,7 +56,7 @@ class Perceptron():
 		# n_folds = 3
 		l_rate = 0.01
 		# try:
-		n_epoch = int(args.epochs)
+		n_epoch = 5#int(args.epochs)
 		# except:
 		# 	n_epoch = 10000
 		# Prepare the training data
@@ -213,10 +215,10 @@ def balance_data(data):
 		Ci = maj_data[labels==i]
 
 		if(counts[i]==0):
-			print "Maj Labels:"
-			print labels
-			print "Maj Counts:"
-			print counts
+			print("Maj Labels:")
+			print(labels)
+			print("Maj Counts:")
+			print(counts)
 
 		# inflate the cluster i by finding the new points
 		new_points = inflate_cluster(Ci,Cmaj_num)
@@ -231,22 +233,22 @@ def balance_data(data):
 
 	k_means_min_clusters = k_means_min.cluster_centers_
 	Kmin = k_means_min_clusters.shape[0]
-	print "Kmin Check"
-	print Kmin
+	print("Kmin Check")
+	print(Kmin)
 	# print k_means_min_clusters
 	# number of data points to be had in each inflated minority cluster
 
 	if(min_counts.size < Kmin):
 		Kmin = min_counts.size
-		print "counts.size ERROR"
-		print min_labels
-		print min_counts
-		print "My foot"
+		print("counts.size ERROR")
+		print(min_labels)
+		print(min_counts)
+		print("My foot")
 
 	Knew = int(Nmaj/Kmin)
 	
-	print "Knew check"
-	print Knew
+	print("Knew check")
+	print(Knew)
 
 	new_min_data = min_data
 	for i in xrange(Kmin):
@@ -262,9 +264,9 @@ def balance_data(data):
 		Ci = min_data[min_labels==i]
 
 		if(Ci.size==0):
-			print "MinCounts[i]=0 ERROR"
-			print min_labels
-			print min_counts
+			print("MinCounts[i]=0 ERROR")
+			print(min_labels)
+			print(min_counts)
 
 		# inflate the cluster i by finding the new points
 		new_points = inflate_cluster(Ci,Knew)
@@ -303,16 +305,16 @@ def get_groups(obj, train):
 def get_split(train):
 	node  = {}
 	impurity = gini_impurity(train)
-	print impurity
+	print(impurity)
 	if(impurity<threshold):
-		print "Leaf finally!"
+		print("Leaf finally!")
 		left = right = to_terminal(train)
 	else:
 		train = balance_data(train)
 		obj = Perceptron(train)
 		left, right, weights = get_groups(obj, train)
-		print "Perceptron says..."
-		print len(left), len(right)
+		print("Perceptron says...")
+		print(len(left), len(right))
 		node['W'] = weights
 
 	# print("Left={}".format(left))
@@ -325,33 +327,37 @@ def get_split(train):
 # Create a terminal node value
 def to_terminal(group):
 	outcomes = [row[-1] for row in group]
-	return max(set(outcomes), key=outcomes.count)
+	label =  max(set(outcomes), key=outcomes.count)
+	label_arr = np.array(outcomes)
+	num_samps = len(outcomes)
+	num_pos = sum(label_arr==1)
+	return label, num_pos, num_samps
  
 # Create child splits for a node or make terminal
 def split(node, max_depth, min_size, depth):
-	print "Depth:"
-	print depth
+	print("Depth:")
+	print(depth)
 	left, right = node['left'], node['right']
 	# check for a no split
 	if left is None or (type(left)==np.ndarray and left.size==0) or right is None or (type(right)==np.ndarray and right.size==0):
 		node['left'] = node['right'] = to_terminal(left + right)
-		print "CORRECT1"
+		print("CORRECT1")
 		return
 	# check for max depth
 	if depth >= max_depth:
-		print "CORRECT2"
+		print("CORRECT2")
 		node['left'], node['right'] = to_terminal(left), to_terminal(right)
 		return
 	# process left child
 	if(type(left)==int):
 		node['left'] = left
 	elif len(left) <= min_size:
-		print "CORRECT3l"
+		print("CORRECT3l")
 		node['left'] = to_terminal(left)
 	else:
 		# if the entire node has the same predictions, make it a terminal node
 		if(sum(left[:,-1])==0 or sum(left[:,-1])==left.shape[0]):
-			print "CORRECT4l"
+			print("CORRECT4l")
 			node['left'] = to_terminal(left)
 		else:
 			# balance the data
@@ -365,12 +371,12 @@ def split(node, max_depth, min_size, depth):
 	if(type(right)==int):
 		node['right'] = right
 	elif len(right) <= min_size:
-		print "CORRECT3r"
+		print("CORRECT3r")
 		node['right'] = to_terminal(right)
 	else:
 		# print len(right)
 		if(sum(right[:,-1])==0 or sum(right[:,-1])==right.shape[0]):
-			print "CORRECT4r"
+			print("CORRECT4r")
 			node['right'] = to_terminal(right)
 		else:
 			# balance the data
@@ -384,10 +390,10 @@ def split(node, max_depth, min_size, depth):
 
 # prints the number of zeros and ones in the data
 def print_num_zeros_ones(data):
-	print "Zeros"
-	print sum(data[:,-1]==0)
-	print "Ones"
-	print sum(data[:,-1]==1)
+	print("Zeros")
+	print(sum(data[:,-1]==0))
+	print("Ones")
+	print(sum(data[:,-1]==1))
 
 def build_tree(dataset, max_depth=5, min_size=10):
 	# Perceptron Tree
@@ -428,10 +434,12 @@ def str_column_to_int(dataset, column):
 
 def prediction(row, root):
 	if(type(root) == dict and 'W' not in root):
-		print "WEIRD"
+		print("WEIRD")
 		return root['left']
 
-	if(type(root)==int or type(root)==np.float64):
+	# leaf node
+	if(type(root)==tuple):
+		# if(type(root)==int or type(root)==np.float64):
 		return root
 
 	# print type(root)
@@ -441,14 +449,16 @@ def prediction(row, root):
 	pred_val = Perceptron.predict(row, root['W'])
 	# return pred_val
 	if(pred_val==0):
-		if(type(root['left'])==int or type(root['left'])==np.float64):
+		# if(type(root['left'])==int or type(root['left'])==np.float64):
+		if(type(root['left']==tuple)):
 			return root['left']
 		# elif(type(root['left']) is np.ndarray):
 		else:
 			root = root['left']
 			return prediction(row, root)
 	if(pred_val==1):
-		if(type(root['right'])==int or type(root['right'])==np.float64):
+		# if(type(root['right'])==int or type(root['right'])==np.float64):
+		if(type(root['right']==tuple)):
 			return root['right']
 		# elif(type(root['right']) is np.ndarray):
 		else:
@@ -458,7 +468,7 @@ def prediction(row, root):
 def eval_algo(data, root):
 	num_correct = 0
 	for row in data:
-		pred_val = prediction(row,root)
+		pred_val, _, _ = prediction(row,root)
 		num_correct += (pred_val==row[-1])
 	return (num_correct*100.0)/len(data)*1.0
 
