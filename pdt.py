@@ -26,6 +26,7 @@ class Perceptron():
 		activation = weights[0]
 		for i in range(len(row)-1):
 			activation += weights[i + 1] * row[i]
+		# print(activation)
 		return 1.0 if activation >= 0.0 else 0.0
 
 	# Estimate Perceptron weights using stochastic gradient descent
@@ -100,6 +101,8 @@ def inflate_cluster(cluster, num_new_points):
 	y = cluster[0,-1]
 	# remove the label column of the data
 	cluster = cluster[:,:-1]
+	# cluster = np.asarray(cluster, dtype=np.float32)
+	# print("cluster shape:",cluster.shape)
 	# find the number of new points to be added
 	num_old_points = cluster.shape[0]
 	num_new_points -= num_old_points
@@ -112,21 +115,22 @@ def inflate_cluster(cluster, num_new_points):
 
 	# print "num_old_points"
 	# print num_old_points
-	# print "num_new_points"
-	# print num_new_points
+	# print("num_new_points",num_new_points)
 	new_points = np.zeros((num_new_points,cluster.shape[1]))
 	a = 0
 	b = num_old_points
 
-	m = min(10,b/2+1)
+	m = min(10,int(b/2+1))
 
 	# print("m={0} num_new_points={1}".format(m,num_new_points))
 
 	neigh = NearestNeighbors(n_neighbors=m)
 	# print cluster.shape
+	# print(np.sum(cluster))
+	# print(cluster.dtype)
 	neigh.fit(cluster)
 
-	for i in xrange(num_new_points):
+	for i in range(num_new_points):
 		# x_l is selected randomly from the cluster
 		x_l = cluster[np.random.randint(a,b)]
 
@@ -152,8 +156,8 @@ def inflate_cluster(cluster, num_new_points):
 # divide the data into majority and minority sets
 def get_maj_min(data):
 	# print data.shape
-	num_zeros = sum(data[:,-1] == 0)
-	num_ones = sum(data[:,-1] == 1)
+	num_zeros = np.sum(data[:,-1] == 0)
+	num_ones = np.sum(data[:,-1] == 1)
 
 
 	# print "In get_maj_min..."
@@ -188,7 +192,7 @@ def balance_data(data):
 	
 	# count the number of occurences of each label (cluster number)
 	counts = np.bincount(labels)
-
+	Kmaj = np.sum(counts!=0)
 
 	# index of cluster with maximum number of points
 	Cmaj_ind = np.argmax(counts)
@@ -198,11 +202,12 @@ def balance_data(data):
 	# inflate the clusters of the majority set
 	# first, find the cluster centres
 	k_means_maj_clusters = k_means_maj.cluster_centers_
-	Kmaj = k_means_maj_clusters.shape[0] # which is same as len(list(set(labels)))
+	range_Kmaj = counts.size
+	# Kmaj = k_means_maj_clusters.shape[0] # which is same as len(list(set(labels)))
 
-	new_maj_data = maj_data
+	new_maj_data = maj_data.copy()
 	# inflate each cluster
-	for i in xrange(Kmaj):
+	for i in range(range_Kmaj):
 		# print "Cluster # %d" %i
 		# skip the biggest clusters
 		if(counts[i]==Cmaj_num):
@@ -215,10 +220,11 @@ def balance_data(data):
 		Ci = maj_data[labels==i]
 
 		if(counts[i]==0):
-			print("Maj Labels:")
-			print(labels)
-			print("Maj Counts:")
-			print(counts)
+			continue
+			# print("Maj Labels:")
+			# print(labels)
+			# print("Maj Counts:")
+			# print(counts)
 
 		# inflate the cluster i by finding the new points
 		new_points = inflate_cluster(Ci,Cmaj_num)
@@ -232,30 +238,33 @@ def balance_data(data):
 	min_counts = np.bincount(min_labels)
 
 	k_means_min_clusters = k_means_min.cluster_centers_
-	Kmin = k_means_min_clusters.shape[0]
-	print("Kmin Check")
-	print(Kmin)
+	Kmin = np.sum(min_counts!=0)
+	range_Kmin = min_counts.size
+	# Kmin = k_means_min_clusters.shape[0]
+	# print("Kmin Check")
+	# print(Kmin)
 	# print k_means_min_clusters
 	# number of data points to be had in each inflated minority cluster
 
-	if(min_counts.size < Kmin):
-		Kmin = min_counts.size
-		print("counts.size ERROR")
-		print(min_labels)
-		print(min_counts)
-		print("My foot")
+	# if(min_counts.size < Kmin):
+	# 	Kmin = min_counts.size
+	# 	print("counts.size ERROR")
+	# 	print(min_labels)
+	# 	print(min_counts)
+	# 	print("My foot")
 
 	Knew = int(Nmaj/Kmin)
 	
-	print("Knew check")
-	print(Knew)
+	# print("Knew check")
+	# print(Knew)
 
 	new_min_data = min_data
-	for i in xrange(Kmin):
+	for i in range(range_Kmin):
 		if(min_counts[i]>=Knew):
 			continue
 
-		# if(min_counts[i]==0):
+		if(min_counts[i]==0):
+			continue
 		# 	print "MinCounts[i]=0 ERROR"
 		# 	print min_labels
 		# 	print min_counts
@@ -263,10 +272,10 @@ def balance_data(data):
 		# find the data points which belong to cluster index i
 		Ci = min_data[min_labels==i]
 
-		if(Ci.size==0):
-			print("MinCounts[i]=0 ERROR")
-			print(min_labels)
-			print(min_counts)
+		# if(Ci.size==0):
+		# 	print("MinCounts[i]=0 ERROR")
+		# 	print(min_labels)
+		# 	print(min_counts)
 
 		# inflate the cluster i by finding the new points
 		new_points = inflate_cluster(Ci,Knew)
@@ -335,29 +344,32 @@ def to_terminal(group):
  
 # Create child splits for a node or make terminal
 def split(node, max_depth, min_size, depth):
-	print("Depth:")
-	print(depth)
+	print("Depth:", depth)
 	left, right = node['left'], node['right']
 	# check for a no split
-	if left is None or (type(left)==np.ndarray and left.size==0) or right is None or (type(right)==np.ndarray and right.size==0):
-		node['left'] = node['right'] = to_terminal(left + right)
-		print("CORRECT1")
+	if left is None or (type(left)==np.ndarray and left.size==0):
+		node['left'] = node['right'] = to_terminal(right)
+		# print("CORRECT1l")
+		return
+	if right is None or (type(right)==np.ndarray and right.size==0):
+		node['left'] = node['right'] = to_terminal(left)
+		# print("CORRECT1r")
 		return
 	# check for max depth
 	if depth >= max_depth:
-		print("CORRECT2")
+		# print("CORRECT2")
 		node['left'], node['right'] = to_terminal(left), to_terminal(right)
 		return
 	# process left child
 	if(type(left)==int):
 		node['left'] = left
 	elif len(left) <= min_size:
-		print("CORRECT3l")
+		# print("CORRECT3l")
 		node['left'] = to_terminal(left)
 	else:
 		# if the entire node has the same predictions, make it a terminal node
 		if(sum(left[:,-1])==0 or sum(left[:,-1])==left.shape[0]):
-			print("CORRECT4l")
+			# print("CORRECT4l")
 			node['left'] = to_terminal(left)
 		else:
 			# balance the data
@@ -371,12 +383,12 @@ def split(node, max_depth, min_size, depth):
 	if(type(right)==int):
 		node['right'] = right
 	elif len(right) <= min_size:
-		print("CORRECT3r")
+		# print("CORRECT3r")
 		node['right'] = to_terminal(right)
 	else:
 		# print len(right)
 		if(sum(right[:,-1])==0 or sum(right[:,-1])==right.shape[0]):
-			print("CORRECT4r")
+			# print("CORRECT4r")
 			node['right'] = to_terminal(right)
 		else:
 			# balance the data
@@ -390,12 +402,10 @@ def split(node, max_depth, min_size, depth):
 
 # prints the number of zeros and ones in the data
 def print_num_zeros_ones(data):
-	print("Zeros")
-	print(sum(data[:,-1]==0))
-	print("Ones")
-	print(sum(data[:,-1]==1))
+	print("# Zeros",sum(data[:,-1]==0))
+	print("Ones:",sum(data[:,-1]==1))
 
-def build_tree(dataset, max_depth=5, min_size=10):
+def build_tree(dataset, max_depth=2, min_size=10):
 	# Perceptron Tree
 	# balance the initial data to the root node
 	# dataset = balance_data(dataset)
@@ -433,6 +443,7 @@ def str_column_to_int(dataset, column):
 	return lookup
 
 def prediction(row, root):
+	# print(root)
 	if(type(root) == dict and 'W' not in root):
 		print("WEIRD")
 		return root['left']
@@ -446,22 +457,33 @@ def prediction(row, root):
 	# print root
 
 	weights = root['W']
+	w1 = np.array(weights)
+	r1 = np.array(row)
+	# print("row", r1.shape)
+	# print("weight", w1.shape)
 	pred_val = Perceptron.predict(row, root['W'])
+
+	# print("PREDICTED VALUE:",pred_val)
 	# return pred_val
 	if(pred_val==0):
 		# if(type(root['left'])==int or type(root['left'])==np.float64):
-		if(type(root['left']==tuple)):
+		if(type(root['left'])==tuple):
 			return root['left']
 		# elif(type(root['left']) is np.ndarray):
 		else:
 			root = root['left']
 			return prediction(row, root)
 	if(pred_val==1):
+		# print("SO RIGHT")
+		# print(type(root['right']))
 		# if(type(root['right'])==int or type(root['right'])==np.float64):
-		if(type(root['right']==tuple)):
+		if(type(root['right'])==tuple):
+			# print("SERIOUSLY?")
+			# print(root["right"])
 			return root['right']
 		# elif(type(root['right']) is np.ndarray):
 		else:
+			# print("ROGER THAT")
 			root = root['right']
 			return prediction(row, root)
 
