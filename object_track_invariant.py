@@ -536,28 +536,28 @@ def main():
     # train the forests and the classifier on the first frame
     print("Frame 0:")
     print("Computing Patches/Features")
-    # patches_data = construct_training_data_forest(img0,bb,mode="INIT")
-    # print("patches_data:", patches_data.shape)
-    # np.save('patches0.npy', patches_data)
-    patches_data = np.load('patches0.npy')
+    patches_data = construct_training_data_forest(img0,bb,mode="INIT")
+    print("patches_data:", patches_data.shape)
+    np.save('patches0.npy', patches_data)
+    # patches_data = np.load('patches0.npy')
     print("Training Forests")
-    # forests = binary_codes_train(patches_data)
+    forests = binary_codes_train(patches_data)
 
     # Save the forest for frame 1
-    # pickle_out = open("forests0.pickle", "wb")
-    # pickle.dump(forests, pickle_out, protocol=2)
-    # pickle_out.close()
+    pickle_out = open("forests0.pickle", "wb")
+    pickle.dump(forests, pickle_out, protocol=2)
+    pickle_out.close()
 
-    pickle_in = open("forests0.pickle","rb")
-    forests = pickle.load(pickle_in)
+    # pickle_in = open("forests0.pickle","rb")
+    # forests = pickle.load(pickle_in)
 
     print("Computing Codes")
-    # codes_data = construct_training_data_classifier(forests, img0, bb, "INIT")
+    codes_data = construct_training_data_classifier(forests, img0, bb, "INIT")
 
     # Save the codes for frame 1
-    # pickle_out = open("codes0.pickle", "wb")
-    # pickle.dump(codes_data, pickle_out, protocol=2)
-    # pickle_out.close()
+    pickle_out = open("codes0.pickle", "wb")
+    pickle.dump(codes_data, pickle_out, protocol=2)
+    pickle_out.close()
 
     pickle_in = open("codes0.pickle","rb")
     codes_data = pickle.load(pickle_in)
